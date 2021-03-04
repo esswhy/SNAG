@@ -1,0 +1,240 @@
+---
+title: 'SNAG: Correlations'
+author: "Shuying Yu"
+date: "June 18, 2020"
+output: pdf_document
+---
+
+```{r, include=FALSE}
+library(foreign)
+#install.packages("compute.es")
+library(compute.es)
+#install.packages("Rcpp")
+#install.packages("WRS2")
+library(WRS2)
+#install.packages("pastecs")
+library(pastecs)
+#install.packages("multcomp")
+library(multcomp)
+#install.packages("emmeans")
+library(emmeans)
+#install.packages("effects")
+library(effects)
+#install.packages("lsr")
+library(lsr)
+#install.packages("lsmeans")
+library(lsmeans)
+#install.packages("rlang")
+#install.packages("tibble")
+#install.packages("dplyr")
+library(haven)
+library(labelled)
+library(psych)
+library(Rmisc)
+library(car)
+library(tidyverse)
+library(agricolae)
+library(afex)
+library(lm.beta)
+library(rlang)
+#install.packages("sjstats")
+library(sjstats)
+#install.packages("effsize")
+library(effsize)
+library(ggplot2)
+library(ggpubr)
+library(Hmisc)
+library(rstatix)
+#install.packages("ez")
+library(ez)
+library(corrplot)
+library(PerformanceAnalytics)
+```
+
+#Variables
+
+Because correlations require observations with the same vector length, this was done for participants who have all tasks completed.
+
+**Dependent variables:**
+
+Names of variables and brief description
+
+* SBSOD (Santa Barbara Sense of Direction scale)
+
+* SOT (estimated angle [SOT_Angle] and angular error [SOT_Error]; if anything, just SOT_Angle is the measure we care about)
+
+* MRM (Money Road Map)
+
+* DSP_Wayfinding (proportion correct)
+
+* DSP_SI (solution index strict coding)
+
+* MAZE_Wayfinding (proportion correct)
+
+* MAZE_Moves (number of moves during exploration)
+
+* LOOP_MeanPositionErr (averge meters across 3 radii)
+
+* LOOP_PositionPSTD (average PSTD for position error across 3 radii)
+
+* LOOP_MeanDegrees (average degrees across 3 radii)
+
+* LOOP_DegreesPSTD (average PSTD for degrees traveled across 3 radii)
+
+
+#Data
+
+```{r}
+#Load data
+corr_dat <- read.csv("Correlations_ALL.csv")
+
+#Remove SubjectID column
+corr_dat <- corr_dat[,c(2:13)]
+
+#Show first 10 rows/subjects
+head(corr_dat, 10)
+```
+
+#Correlation matrix with p-values
+
+```{r}
+#Save correlation matrix into variable
+res <- rcorr(as.matrix(corr_dat), type = "pearson")
+res
+```
+
+#Table
+
+Formatting a correlation matrix into a table with 4 columns containing :
+
+* Column 1 : row names (variable 1 for the correlation test)
+
+* Column 2 : column names (variable 2 for the correlation test)
+
+* Column 3 : the correlation coefficients
+
+* Column 4 : the *p*-values of the correlations
+
+
+```{r}
+#Create function to combine coefficients and p-values
+
+#coeff_mat: matrix of the correlation coefficients
+#p_mat : matrix of the correlation p-values
+
+CorMat <- function(coeff_mat, p_mat) {
+  
+  #Save upper half triangle of coefficients
+  #This is because the other half is redundant
+  up_half <- upper.tri(coeff_mat)
+  
+  #Save into dataframe
+  data.frame(
+    
+    #Variable 1
+    Var1 = rownames(coeff_mat)[row(coeff_mat)[up_half]],
+    #Variable 2
+    Var2 = rownames(coeff_mat)[col(coeff_mat)[up_half]],
+    #Correlation coefficient
+    Corr  =(coeff_mat)[up_half],
+    #p-value
+    p_value = p_mat[up_half]
+    )
+}
+```
+
+
+```{r}
+#Pearson correlation
+res2 <- rcorr(as.matrix(corr_dat), type="pearson")
+
+#Use function to place into table
+
+#res2$r = correlation coefficient
+#res2$P = associated p-value
+CorMat(res2$r, res2$P)
+```
+
+
+#Visualize correlation matrix
+
+##Scatter and chart
+
+```{r}
+#Scatter plot, histogram, and correlation value
+chart.Correlation(corr_dat, histogram=TRUE, pch=19)
+```
+
+
+In the above plot:
+
+* The distribution of each variable is shown on the diagonal.
+
+* On the bottom of the diagonal : the bivariate scatter plots with a fitted line are displayed
+
+* On the top of the diagonal : the value of the correlation plus the significance level as stars
+
+* Each significance level is associated to a symbol : *p*-values(0, 0.001, 0.01, 0.05, 0.1, 1) <=> symbols(`***`, `**`, `*`, `.`, ` `)
+
+
+##Correlation
+
+```{r}
+#Display only "upper" triangular portion to cut redundancy
+
+corrplot(res2$r, type = "upper", order = "hclust", 
+         tl.col = "black", tl.srt = 45)
+```
+
+```{r}
+#Show correlation coefficient numbers
+
+corrplot(res2$r, method="number", number.cex=0.5)
+```
+
+
+```{r}
+#Significance at p = 0.05
+
+#Insignificant correlations are left blank
+corrplot(res2$r, type="upper", order="hclust", 
+         p.mat = res2$P, sig.level = 0.05, insig = "blank")
+```
+
+
+```{r}
+#Numbers are correlation coefficients
+#Colored squares are those that meet significance (alpha = 0.05)
+
+#Color palette taken from Reference [1] and [2]
+col <- colorRampPalette(c("#BB4444", "#EE9988", "#FFFFFF", "#77AADD", "#4477AA"))
+
+corrplot(res2$r, method="color", col=col(200),  
+         type="upper", order="hclust", 
+         #Add coefficient of correlation
+         addCoef.col = "black",
+         #Text label color and rotation
+         tl.col="black", tl.srt=45, 
+         # Combine with significance
+         p.mat = res2$P, sig.level = 0.05, insig = "blank", number.cex=0.6,
+         #Hide correlation coefficient on the principal diagonal
+         diag=FALSE 
+         )
+```
+
+
+Positive correlations are displayed in blue and negative correlations in red color. Color intensity and the size of the circle are proportional to the correlation coefficients. On the right side of the correlogram, the legend color shows the correlation coefficients and the corresponding colors.
+
+
+#References
+
+1. Correlation matrix : A quick start guide to analyze, format and visualize a correlation matrix using R softwards. http://www.sthda.com/english/wiki/correlation-matrix-a-quick-start-guide-to-analyze-format-and-visualize-a-correlation-matrix-using-r-software
+
+2. Visualize correlation matrix using correlogram. http://www.sthda.com/english/wiki/visualize-correlation-matrix-using-correlogram
+
+
+
+
+
+
+
