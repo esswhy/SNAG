@@ -1,0 +1,990 @@
+---
+title: "Yu et al Psych Science - Data Analysis"
+author: "Shuying Yu"
+date: "April 21, 2020"
+output: pdf_document
+---
+
+#SAMPLE SIZES 
+
+**TOTAL**
+
+* Young = 85 
+    + 39 female
+    + 46 males
+
+* Old = 66 
+    + 40 females
+    + 26 males
+
+
+**LOOP:**
+
+* Young = 52
+    + 25 females
+    + 27 males
+
+* Old = 56
+    + 33 females
+    + 23 males
+
+**MAZE:**
+
+* Young = 50
+    + 26 females
+    + 24 males
+
+* Old = 39
+    + 25 females
+    + 14 males
+
+
+**DSP:**
+
+* Young = 54
+    + 26 females
+    + 28 males
+
+* Old = 40
+    + 19 females
+    + 21 males
+
+
+```{r, include=FALSE}
+library(foreign)
+#install.packages("compute.es")
+library(compute.es)
+#install.packages("Rcpp")
+#install.packages("WRS2")
+library(WRS2)
+#install.packages("pastecs")
+library(pastecs)
+#install.packages("multcomp")
+library(multcomp)
+#install.packages("emmeans")
+library(emmeans)
+#install.packages("effects")
+library(effects)
+#install.packages("lsr")
+library(lsr)
+#install.packages("lsmeans")
+library(lsmeans)
+#install.packages("rlang")
+#install.packages("tibble")
+#install.packages("dplyr")
+library(haven)
+library(labelled)
+library(psych)
+library(Rmisc)
+library(car)
+library(tidyverse)
+library(agricolae)
+library(afex)
+library(lm.beta)
+library(rlang)
+#install.packages("sjstats")
+library(sjstats)
+#install.packages("effsize")
+library(effsize)
+library(ggplot2)
+library(ggpubr)
+library(Hmisc)
+library(rstatix)
+#install.packages("ez")
+library(ez)
+```
+
+***
+
+#LOOP
+
+
+##Position Error
+
+Length of the straight line distance between the actual start of the circle and where participants thought was the start of the circle.
+
+Expressed in meters (m).
+
+\hfill\break
+
+```{r}
+#Read dataframe
+df_loop <- read.csv("LOOP_ALL_2020_removed.csv")
+names(df_loop)[1] <- "SubjectID"
+df_loop$SubjectID <- as.factor(df_loop$SubjectID)
+```
+
+
+```{r}
+#Load the data and show some random ros by groups
+set.seed(123)
+df_loop %>% sample_n_by(Group, Sex, size=1)
+```
+
+
+```{r}
+#Gather columns meandist1,2,3 into long format
+
+#convert SubjectID into factor
+
+df_loop <- df_loop %>% 
+  gather(key="Radius", value="PE", mean_dist1, mean_dist2, mean_dist3) %>% 
+  convert_as_factor(SubjectID, Radius)
+
+#Inspect some random rows of the data by groups
+set.seed(123)
+df_loop %>% sample_n_by(Group, Sex, Radius, size=1)
+```
+
+
+```{r}
+aov_pe <- anova_test(
+  data=df_loop, dv=PE, wid=SubjectID,
+  within=c(Radius),
+  between=c(Group, Sex),
+  effect.size = "pes"
+  )
+
+#get_anova_table(aov_pe)
+aov_pe
+```
+
+
+```{r}
+library(apaTables)
+get.ci.partial.eta.squared(5.46, 1, 36, conf.level = .95)
+```
+
+
+
+###Post-hoc
+
+#####Sex:Radius
+
+```{r}
+# Two-way ANOVA at each age group level
+# Effect of Sex at each level of Radius
+one.way <- df_loop %>%
+  group_by(Radius) %>%
+  anova_test(dv = PE, wid = SubjectID, between = Sex) %>%
+  get_anova_table() %>%
+  adjust_pvalue(method = "bonferroni")
+one.way
+```
+
+
+
+#####Group:Radius
+
+```{r}
+# Two-way ANOVA at each age group level
+# Effect of Group at each level of Radius
+one.way2 <- df_loop %>%
+  group_by(Radius) %>%
+  anova_test(dv = PE, wid = SubjectID, between = Group) %>%
+  get_anova_table() %>%
+  adjust_pvalue(method = "bonferroni")
+one.way2
+```
+
+
+
+##Position Error Variability
+
+```{r}
+#Read dataframe
+df_loop1.1 <- read.csv("LOOP_ALL_2020_removed.csv")
+names(df_loop1.1)[1] <- "SubjectID"
+```
+
+
+```{r}
+#Load the data and show some random ros by groups
+set.seed(123)
+df_loop1.1 %>% sample_n_by(Group, Sex, size=1)
+```
+
+
+```{r}
+#Gather columns meandist1,2,3 into long format
+
+#convert SubjectID into factor
+
+df_loop1.1 <- df_loop1.1 %>% 
+  gather(key="Radius", value="PE_pstd", pstd_dist1, pstd_dist2, pstd_dist3) %>% 
+  convert_as_factor(SubjectID, Radius)
+
+#Inspect some random rows of the data by groups
+set.seed(123)
+df_loop1.1 %>% sample_n_by(Group, Sex, Radius, size=1)
+```
+
+
+```{r}
+aov_pestd <- anova_test(
+  data=df_loop1.1, dv=PE_pstd, wid=SubjectID,
+  within=c(Radius),
+  between=c(Group, Sex),
+  effect.size = "pes"
+  )
+
+#get_anova_table(aov_pe)
+aov_pestd
+```
+
+##Degrees Traveled
+
+```{r}
+#Read dataframe
+df_loop2 <- read.csv("LOOP_ALL_2020_removed.csv")
+names(df_loop2)[1] <- "SubjectID"
+```
+
+
+```{r}
+#Load the data and show some random ros by groups
+set.seed(123)
+df_loop2 %>% sample_n_by(Group, Sex, size=1)
+```
+
+
+
+```{r}
+#Gather columns meandegrees1,2,3 into long format
+
+#convert SubjectID into factor
+
+
+df_loop2 <- df_loop2 %>% 
+  gather(key="Radius", value="DE", mean_degrees1, mean_degrees2, mean_degrees3) %>% 
+  convert_as_factor(SubjectID, Radius)
+
+#Inspect some random rows of the data by groups
+set.seed(123)
+df_loop2 %>% sample_n_by(Group, Sex, Radius, size=1)
+```
+
+
+```{r}
+aov_de <- anova_test(
+  data=df_loop2, dv=DE, wid=SubjectID,
+  within=c(Radius),
+  between=c(Group, Sex),
+  effect.size = "pes"
+  )
+
+#get_anova_table(aov_de)
+aov_de
+```
+
+
+
+##Degrees Traveled Variability
+
+
+```{r}
+#Read dataframe
+df_loop2.1 <- read.csv("LOOP_ALL_2020_removed.csv")
+names(df_loop2.1)[1] <- "SubjectID"
+```
+
+
+```{r}
+#Load the data and show some random ros by groups
+set.seed(123)
+df_loop2.1 %>% sample_n_by(Group, Sex, size=1)
+```
+
+
+```{r}
+#Gather columns meandegrees1,2,3 into long format
+
+#convert SubjectID into factor
+
+
+df_loop2.1 <- df_loop2.1 %>% 
+  gather(key="Radius", value="DE_pstd", pstd_degrees1, pstd_degrees2, pstd_degrees3) %>% 
+  convert_as_factor(SubjectID, Radius)
+
+#Inspect some random rows of the data by groups
+set.seed(123)
+df_loop2.1 %>% sample_n_by(Group, Sex, Radius, size=1)
+```
+
+
+
+```{r}
+aov_destd <- anova_test(
+  data=df_loop2.1, dv=DE_pstd, wid=SubjectID,
+  within=c(Radius),
+  between=c(Group, Sex),
+  effect.size = "pes"
+  )
+
+#get_anova_table(aov_de)
+aov_destd
+```
+
+
+
+***
+
+
+#MAZE
+
+```{r}
+df_maze <- read.csv("MAZE_ALL_2020.csv")
+```
+
+
+##Test against Chance Level
+
+```{r}
+#Young female
+df_maze_yf <- df_maze %>% filter(Group == "Young" & Sex == "Female")
+t.test(df_maze_yf$AvgAccuracy, mu=.1111, alternative="greater", conf.level=0.95)
+```
+
+
+```{r}
+mean(df_maze_yf$AvgAccuracy)
+sd(df_maze_yf$AvgAccuracy)
+CI(df_maze_yf$AvgAccuracy, ci = 0.95)
+
+#Cohen's d: (mean - mu)/sd
+(mean(df_maze_yf$AvgAccuracy) - .1111)/sd(df_maze_yf$AvgAccuracy)
+
+cohen.d.ci((mean(df_maze_yf$AvgAccuracy) - .1111)/sd(df_maze_yf$AvgAccuracy),
+            n1=26, alpha = 0.05)
+```
+
+
+```{r}
+#Young male
+df_maze_ym <- df_maze %>% filter(Group == "Young" & Sex == "Male")
+t.test(df_maze_ym$AvgAccuracy, mu=.1111, alternative="greater", conf.level=0.95)
+```
+
+
+```{r}
+mean(df_maze_ym$AvgAccuracy)
+sd(df_maze_ym$AvgAccuracy)
+CI(df_maze_ym$AvgAccuracy, ci = 0.95)
+
+#Cohen's d: (mean - mu)/sd
+(mean(df_maze_ym$AvgAccuracy) - .1111)/sd(df_maze_ym$AvgAccuracy)
+
+cohen.d.ci((mean(df_maze_ym$AvgAccuracy) - .1111)/sd(df_maze_ym$AvgAccuracy),
+            n1=24, alpha = 0.05)
+```
+
+
+
+
+```{r}
+#Midlife female
+df_maze_mf <- df_maze %>% filter(Group == "Midlife" & Sex == "Female")
+t.test(df_maze_mf$AvgAccuracy, mu=.1111, alternative="greater", conf.level=0.95)
+```
+
+
+```{r}
+mean(df_maze_mf$AvgAccuracy)
+sd(df_maze_mf$AvgAccuracy)
+CI(df_maze_mf$AvgAccuracy, ci = 0.95)
+
+#Cohen's d: (mean - mu)/sd
+(mean(df_maze_mf$AvgAccuracy) - .1111)/sd(df_maze_mf$AvgAccuracy)
+
+cohen.d.ci((mean(df_maze_mf$AvgAccuracy) - .1111)/sd(df_maze_mf$AvgAccuracy),
+            n1=25, alpha = 0.05)
+```
+
+
+```{r}
+#Midlife male
+df_maze_mm <- df_maze %>% filter(Group == "Midlife" & Sex == "Male")
+t.test(df_maze_mm$AvgAccuracy, mu=.1111, alternative="greater", conf.level=0.95)
+```
+
+```{r}
+mean(df_maze_mm$AvgAccuracy)
+sd(df_maze_mm$AvgAccuracy)
+CI(df_maze_mm$AvgAccuracy, ci = 0.95)
+
+#Cohen's d: (mean - mu)/sd
+(mean(df_maze_mm$AvgAccuracy) - .1111)/sd(df_maze_mm$AvgAccuracy)
+
+cohen.d.ci((mean(df_maze_mm$AvgAccuracy) - .1111)/sd(df_maze_mm$AvgAccuracy),
+            n1=14, alpha = 0.05)
+```
+
+
+##Wayfinding Success / Accuracy
+
+
+```{r}
+options(contrasts=c("contr.sum", "contr.poly"))
+interaction_acc <- aov(AvgAccuracy~Group*Sex, data = df_maze)
+Anova(interaction_acc, type="III")
+```
+
+
+```{r}
+acc <- Anova(interaction_acc, type="III")
+anova_stats(acc)
+```
+
+
+```{r}
+#Based on bootstrapping
+eta_sq(acc, partial = TRUE, ci.lvl = .95,
+       n = 1000, method = "quantile")
+```
+
+
+
+###Post-hoc
+
+```{r}
+# Effect of treatment at each level of Group
+df_maze %>%
+  group_by(Group) %>%
+  anova_test(AvgAccuracy ~ Sex, 
+             type = "III",
+             effect.size = "pes") %>%
+  get_anova_table() %>%
+  adjust_pvalue(method = "bonferroni")
+```
+
+```{r}
+#Cohen's d
+
+df_maze_midlife <- df_maze %>% filter(Group == "Midlife")
+df_maze_young <- df_maze %>% filter(Group == "Young")
+df_maze_female <- df_maze %>% filter(Sex == "Female")
+df_maze_male <- df_maze %>% filter(Sex == "Male")
+
+#Effect of Sex on Midlife
+cohen.d(AvgAccuracy ~ Sex, group=Group, data=df_maze_midlife,
+        conf.level=0.95, pooled=T, paired=F)
+```
+
+
+```{r}
+#Effect of Sex on Young
+cohen.d(AvgAccuracy ~ Sex, group=Group, data=df_maze_young,
+        conf.level=0.95, pooled=T, paired=F)
+```
+
+
+```{r}
+mean(df_maze_midlife$AvgAccuracy)
+sd(df_maze_midlife$AvgAccuracy)
+CI(df_maze_midlife$AvgAccuracy, ci = 0.95)
+
+mean(df_maze_young$AvgAccuracy)
+sd(df_maze_young$AvgAccuracy)
+CI(df_maze_young$AvgAccuracy, ci = 0.95)
+```
+
+
+```{r}
+# Effect of treatment at each level of Sex
+df_maze %>%
+  group_by(Sex) %>%
+  anova_test(AvgAccuracy ~ Group,
+             type = "III",
+             effect.size = "pes") %>%
+  get_anova_table() %>%
+  adjust_pvalue(method = "bonferroni")
+```
+
+
+```{r}
+#Effect of Age on Female
+cohen.d(AvgAccuracy ~ Group, group=Sex, data=df_maze_female,
+        conf.level=0.95, pooled=T, paired=F)
+```
+
+
+```{r}
+#Effect of Age on Male
+cohen.d(AvgAccuracy ~ Group, group=Sex, data=df_maze_male,
+        conf.level=0.95, pooled=T, paired=F)
+```
+
+```{r}
+mean(df_maze_female$AvgAccuracy)
+sd(df_maze_female$AvgAccuracy)
+CI(df_maze_female$AvgAccuracy, ci = 0.95)
+
+mean(df_maze_male$AvgAccuracy)
+sd(df_maze_male$AvgAccuracy)
+CI(df_maze_male$AvgAccuracy, ci = 0.95)
+```
+
+
+##Moves
+
+###Correlation
+
+```{r}
+#95% CI here is for the estimate (correlation)
+cor.test(df_maze$Moves, df_maze$AvgAccuracy, method="pearson")
+```
+
+
+```{r}
+#needs alternative and conf level
+cor.test(df_maze$Moves, df_maze$AvgAccuracy, method="pearson",
+         alternative="two.sided", conf.level = .95)
+```
+
+
+
+###Mean and SD
+
+```{r}
+describe.by(df_maze$Moves)
+```
+
+```{r}
+#95% CI for mean
+CI(df_maze$Moves, ci = 0.95)
+```
+
+
+```{r}
+#By Groups: Young vs Midlife
+mean(df_maze_young$Moves)
+sd(df_maze_young$Moves)
+CI(df_maze_young$Moves, ci = 0.95)
+
+mean(df_maze_midlife$Moves)
+sd(df_maze_midlife$Moves)
+CI(df_maze_midlife$Moves, ci = 0.95)
+
+#By Sex: Female vs Male
+mean(df_maze_female$Moves)
+sd(df_maze_female$Moves)
+CI(df_maze_female$Moves, ci = 0.95)
+
+mean(df_maze_male$Moves)
+sd(df_maze_male$Moves)
+CI(df_maze_male$Moves, ci = 0.95)
+```
+
+
+
+###ANOVA
+
+```{r}
+options(contrasts=c("contr.sum", "contr.poly"))
+interaction_moves <- aov(Moves~Group*Sex, data = df_maze)
+Anova(interaction_moves, type="III")
+```
+
+
+
+```{r}
+moves1 <- Anova(interaction_moves, type="III")
+anova_stats(moves1)
+```
+
+
+```{r}
+#Based on bootstrapping
+eta_sq(moves1, partial = TRUE, ci.lvl = .95,
+       n = 1000, method = "quantile")
+```
+
+
+##ANCOVA 
+
+On Wayfinding Success/Accuracy controlling for Moves
+
+```{r}
+options(contrasts=c("contr.sum", "contr.poly"))
+interaction_acc2 <- aov(AvgAccuracy~Moves + Group*Sex, data = df_maze)
+Anova(interaction_acc2, type="III")
+```
+
+
+```{r}
+acc2 <-Anova(interaction_acc2, type="III")
+anova_stats(acc2)
+```
+
+```{r}
+#Based on bootstrapping
+eta_sq(acc2, partial = TRUE, ci.lvl = .95,
+       n = 1000, method = "quantile")
+```
+
+###Post-hoc effect sizes with adjusted means
+
+```{r}
+#Adjusted means of wayfinding with associated 95%CI and SE
+#Adjusted for the effect of the covariate Moves
+adjustedmeans <- effect("Group*Sex", interaction_acc2, se=T)
+summary(adjustedmeans)
+adjustedmeans$se
+```
+
+SE order = midlife female, midlife male, young female, young male
+
+```{r}
+#Adjusted SD from adjusted means for Group*Sex
+adjustedmeans$se*sqrt(c(25, 14, 26, 24))
+```
+
+
+```{r}
+#Effect size and CI for Simple efect of Sex - Midlife (midlife women and men)
+
+#Effect sizes for the difference between midlife women and men
+mes( 0.1088111, 0.2686762, 0.2455819, 0.1699723, 25, 14)
+```
+
+
+```{r}
+#Effect size and CI for Simple efect of Sex - Young (young women and men)
+
+#Effect sizes for the difference between young women and men
+mes( 0.2078208, 0.6539117, 0.3092134, 0.2343850, 26, 24)
+```
+
+
+
+```{r}
+#Effect size and CI for Simple efect of age - women (young and midlife women)
+
+#Effect sizes for the difference between midlife and yong women
+mes(0.1088111, 0.2078208, 0.2455819, 0.3092134, 25, 26)
+```
+
+
+```{r}
+#Effect size and CI for Simple efect of age - men (young and midlife men)
+
+#Effect sizes for the difference between midlife and yong men
+mes(0.2686762, 0.6539117, 0.1699723, 0.2343850, 14, 24)
+```
+
+
+
+
+###Post-hoc
+
+```{r}
+# Effect of treatment at each level of Group
+df_maze %>%
+  group_by(Group) %>%
+  anova_test(AvgAccuracy ~ Moves + Sex,
+             type = "III",
+             effect.size = "pes") %>%
+  get_anova_table() %>%
+  adjust_pvalue(method = "bonferroni")
+```
+
+
+```{r}
+# Pairwise comparisons at level of Group
+pwc.cov1 <- df_maze %>% 
+  group_by(Group) %>%
+  emmeans_test(
+    AvgAccuracy ~ Sex, covariate = Moves,
+    p.adjust.method = "bonferroni",
+    detailed = TRUE
+    )
+pwc.cov1 
+```
+
+
+
+```{r}
+# Effect of treatment at each level of Sex
+df_maze %>%
+  group_by(Sex) %>%
+  anova_test(AvgAccuracy ~ Moves + Group,
+             type="III",
+             effect.size = "pes")  %>%
+  get_anova_table() %>%
+  adjust_pvalue(method = "bonferroni")
+```
+
+
+```{r}
+# Pairwise comparisons at level of Sex
+pwc.cov2 <- df_maze %>% 
+  group_by(Sex) %>%
+  emmeans_test(
+    AvgAccuracy_Percent ~ Group, covariate = Moves,
+    p.adjust.method = "bonferroni"
+    )
+pwc.cov2 
+```
+
+
+
+
+
+
+
+
+***
+
+
+#DSP
+
+
+##Solution Index 
+
+Propensity (proportion) or preference to take more shortcuts (range is 0-1); expressed in %
+
+>More likely to take shortcuts = >0.50  
+
+>Less likely to take shortcuts = <0.50
+
+Formula: (# of STRICT shortcuts/# of successful trials)
+
+\hfill\break
+
+
+```{r}
+#Read dataframe
+df_dsp <- read.csv("DSP_ALL_2020_removed.csv")
+```
+
+
+
+```{r}
+options(contrasts=c("contr.sum", "contr.poly"))
+interaction_SI <- aov(SI_strict~Group*Sex, data = df_dsp)
+Anova(interaction_SI, type="III")
+```
+
+
+```{r}
+aov_si <- Anova(interaction_SI, type="III")
+anova_stats(aov_si)
+```
+
+```{r}
+#Based on bootstrapping
+eta_sq(aov_si, partial = TRUE, ci.lvl = .95,
+       n = 1000, method = "quantile")
+```
+
+###Post-hoc
+
+```{r}
+# Effect of treatment at each level of Group
+df_dsp %>%
+  group_by(Group) %>%
+  anova_test(SI_strict ~ Sex, 
+             type = "III",
+             effect.size = "pes") %>%
+  get_anova_table() %>%
+  adjust_pvalue(method = "bonferroni")
+```
+
+```{r}
+df_dsp_yf <- df_dsp %>% filter(Group == "Young" & Sex == "Female")
+df_dsp_ym <- df_dsp %>% filter(Group == "Young" & Sex == "Male")
+df_dsp_mf <- df_dsp %>% filter(Group == "Midlife" & Sex == "Female")
+df_dsp_mm <- df_dsp %>% filter(Group == "Midlife" & Sex == "Male")
+df_dsp_female <- df_dsp %>% filter(Sex == "Female")
+df_dsp_male <- df_dsp %>% filter(Sex == "Male")
+df_dsp_young <- df_dsp %>% filter(Group == "Young")
+df_dsp_midlife <- df_dsp %>% filter(Group == "Midlife")
+
+mean(df_dsp_young$SI_strict)
+sd(df_dsp_young$SI_strict)
+CI(df_dsp_young$SI_strict, ci = 0.95)
+
+mean(df_dsp_midlife$SI_strict)
+sd(df_dsp_midlife$SI_strict)
+CI(df_dsp_midlife$SI_strict, ci = 0.95)
+
+mean(df_dsp_male$SI_strict)
+sd(df_dsp_male$SI_strict)
+CI(df_dsp_male$SI_strict, ci = 0.95)
+
+mean(df_dsp_female$SI_strict)
+sd(df_dsp_female$SI_strict)
+CI(df_dsp_female$SI_strict, ci = 0.95)
+```
+
+```{r}
+#Effect of Age on Female
+cohen.d(SI_strict ~ Group, group=Sex, data=df_dsp_female,
+        conf.level=0.95, pooled=T, paired=F)
+```
+
+```{r}
+#Effect of Age on Male
+cohen.d(SI_strict ~ Group, group=Sex, data=df_dsp_male,
+        conf.level=0.95, pooled=T, paired=F)
+```
+
+
+```{r}
+# Effect of treatment at each level of Sex
+df_dsp %>%
+  group_by(Sex) %>%
+  anova_test(SI_strict ~ Group,
+             type = "III",
+             effect.size = "pes") %>%
+  get_anova_table() %>%
+  adjust_pvalue(method = "bonferroni")
+```
+
+```{r}
+#Effect of Sex on Young
+cohen.d(SI_strict ~ Sex, group=Group, data=df_dsp_young,
+        conf.level=0.95, pooled=T, paired=F)
+```
+
+```{r}
+#Effect of Sex on Midlife
+cohen.d(SI_strict ~ Sex, group=Group, data=df_dsp_midlife,
+        conf.level=0.95, pooled=T, paired=F)
+```
+
+
+
+
+##Wayfinding Success / Proportion of successful trials
+
+Number of trials they successed over total number of trials attempted which is usually 20 trials.
+
+Expressed as a percent (range from 0-1).
+
+```{r}
+options(contrasts=c("contr.sum", "contr.poly"))
+interaction_success <- aov(Success_dec~Group*Sex, data = df_dsp)
+Anova(interaction_success, type="III")
+```
+
+
+```{r}
+success1 <-  Anova(interaction_success, type="III")
+anova_stats(success1)
+```
+
+```{r}
+#Based on bootstrapping
+eta_sq(success1, partial = TRUE, ci.lvl = .95,
+       n = 1000, method = "quantile")
+```
+
+
+```{r}
+#95%CI
+
+mean(df_dsp_young$Success_dec)
+sd(df_dsp_young$Success_dec)
+CI(df_dsp_young$Success_dec, ci = 0.95)
+
+mean(df_dsp_midlife$Success_dec)
+sd(df_dsp_midlife$Success_dec)
+CI(df_dsp_midlife$Success_dec, ci = 0.95)
+
+mean(df_dsp_female$Success_dec)
+sd(df_dsp_female$Success_dec)
+CI(df_dsp_female$Success_dec, ci = 0.95)
+
+mean(df_dsp_male$Success_dec)
+sd(df_dsp_male$Success_dec)
+CI(df_dsp_male$Success_dec, ci = 0.95)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

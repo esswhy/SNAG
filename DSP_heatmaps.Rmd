@@ -1,0 +1,105 @@
+---
+title: "PointingDSP"
+author: "Shuying Yu"
+date: "5/30/2019"
+output: html_document
+---
+
+This code is for generating heatmaps for each of the 4 groups of participants for the DSP task:
+
+* Midlife females
+
+* Midlife males
+
+* Young females
+
+* Young males
+
+Trajectories are taken from the x, y (z) coordinates of partcipants' positions in the virtual desktop DSP grid. All CSV files need to be preprocessed prior to using this code.
+
+```{r, message=FALSE, warning=FALSE}
+#Set working directory
+
+setwd("C:/Users/shuying/Box/UC Santa Barbara/Data/SNAG/SNAG_Behavior_2020/DSP/Heatmaps")
+#setwd("C:/Users/yu/Box/UC Santa Barbara/Data/SNAG_Behavior_2020/DSP/Heatmaps")
+
+#Libraries
+library(foreign)
+library(ggplot2)
+library(RColorBrewer)
+```
+
+
+
+```{r}
+#Read in data files
+old_female <- read.csv("PointingDSP2_Midlife_Female.csv")
+old_male <- read.csv("PointingDSP2_Midlife_Male.csv")
+young_female <- read.csv("PointingDSP2_Young_Female.csv")
+young_male <- read.csv("PointingDSP2_Young_Male.csv")
+```
+
+
+```{r}
+#Heatmap for midlife females
+p1 <- ggplot(old_female, aes(x=x, y=z) ) +
+  stat_density_2d(aes(fill = ..density..), geom = "raster", contour = FALSE) +
+  #scale_fill_distiller(palette= "RdYlGn", direction=-1) +
+  scale_fill_distiller(palette= "RdYlGn", direction=-1) +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0)) +
+  theme_void()+
+  theme(legend.position='none') 
+p1
+#ggsave("Midlife_Female.pdf", width = 20, height = 20, dpi = 1000)
+```
+
+
+```{r}
+#Heatmap for midlife males
+p2 <- ggplot(old_male, aes(x=x, y=z) ) +
+  stat_density_2d(aes(fill = ..density..), geom = "raster", contour = FALSE) +
+  #scale_fill_distiller(palette= "RdYlGn", direction=-1) +
+  scale_fill_distiller(palette= "RdYlGn", direction=-1) +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0)) +
+  theme_void()+
+  theme(legend.position='none') 
+p2
+#ggsave("Midlife_Male.pdf", width = 20, height = 20, dpi = 1000)
+```
+
+
+```{r}
+#Heatmap for younger females
+p3 <- ggplot(young_female, aes(x=x, y=z) ) +
+  stat_density_2d(aes(fill = ..density..), geom = "raster", contour = FALSE) +
+  #scale_fill_distiller(palette= "RdYlGn", direction=-1) +
+  scale_fill_distiller(palette= "RdYlGn", direction=-1) +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0)) +
+  theme_void()+
+  theme(legend.position='none') 
+p3
+#ggsave("Young_Female.pdf", width = 20, height = 20, dpi = 1000)
+```
+
+
+```{r}
+#Heatmap for younger males
+p4 <- ggplot(young_male, aes(x=x, y=z) ) +
+  stat_density_2d(aes(fill = ..density..), geom = "raster", contour = FALSE) +
+  #scale_fill_distiller(palette= "RdYlGn", direction=-1) +
+  scale_fill_distiller(palette= "RdYlGn", direction=-1) +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0)) +
+  theme_void()+
+  theme(legend.position='none') 
+p4
+#ggsave("Young_Male.pdf", width = 20, height = 20, dpi = 1000)
+```
+
+
+
+
+
