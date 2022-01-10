@@ -1,5 +1,5 @@
-# SNAG
-## Spatial Navigation and Aging Project
+# SNAG: Spatial Navigation and Aging Project
+## Age and sex differences in navigation behaviors between young and midlife adults
 
 This repository currently contains the code and data for:
 
